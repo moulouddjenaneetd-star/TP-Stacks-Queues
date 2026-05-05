@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TP Algo2 – Stacks & Queues in C</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0d1117;color:#c9d1d9;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{background:linear-gradient(135deg,#1a237e 0%,#0d47a1 100%);padding:12px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #1565c0;flex-shrink:0}
+header h1{font-size:1.2rem;color:#fff}
+header p{color:#90caf9;font-size:0.78rem}
+.tab-bar{display:flex;background:#161b22;border-bottom:1px solid #30363d;flex-shrink:0}
+.tab{padding:11px 20px;background:none;border:none;color:#8b949e;cursor:pointer;font-size:0.82rem;font-weight:600;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s}
+.tab:hover{color:#e6edf3;background:#1c2128}
+.tab.active{color:#79c0ff;border-bottom-color:#388bfd;background:#1c2128}
+.workspace{display:flex;flex:1;overflow:hidden}
+.code-pane{width:44%;border-right:1px solid #30363d;display:flex;flex-direction:column;background:#0d1117;flex-shrink:0}
+.code-titlebar{background:#161b22;padding:7px 14px;display:flex;align-items:center;gap:6px;border-bottom:1px solid #30363d;flex-shrink:0}
+.tl{width:11px;height:11px;border-radius:50%}
+.tl-r{background:#ff5f57}.tl-y{background:#febc2e}.tl-g{background:#28c840}
+.code-fname{color:#8b949e;font-size:0.75rem;margin-left:6px}
+.code-scroll{flex:1;overflow-y:auto;padding:6px 0}
+.cl{display:flex;align-items:center;min-height:21px;line-height:21px;font-family:'Consolas','Monaco',monospace;font-size:12.5px;border-left:3px solid transparent;transition:background .25s,border-color .25s}
+.cl.hl{background:rgba(56,139,253,.18);border-left-color:#388bfd}
+.ln{display:inline-block;width:34px;text-align:right;padding-right:10px;color:#3d4450;user-select:none;flex-shrink:0}
+.lc{flex:1;padding-right:12px;white-space:pre}
+.kw{color:#ff7b72}.ty{color:#79c0ff}.fn{color:#d2a8ff}.cm{color:#5a6370;font-style:italic}.str{color:#a5d6ff}.num{color:#79c0ff}.field{color:#ffa657}
+.viz-pane{flex:1;display:flex;flex-direction:column;background:#161b22;overflow:hidden}
+.viz-canvas{flex:1;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+.step-bar{background:#0d1117;border-top:1px solid #30363d;padding:12px 18px;flex-shrink:0}
+.step-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.dots{display:flex;gap:4px;flex-wrap:wrap;flex:1}
+.dot{width:8px;height:8px;border-radius:50%;background:#21262d;cursor:pointer;transition:all .2s}
+.dot.done{background:#388bfd}
+.dot.cur{background:#79c0ff;width:10px;height:10px}
+.s-count{color:#8b949e;font-size:0.75rem;white-space:nowrap}
+.step-desc{background:#1c2128;border:1px solid #30363d;border-radius:7px;padding:10px 14px;font-size:0.875rem;line-height:1.6;color:#e6edf3;margin-bottom:10px}
+.step-desc code{background:#21262d;padding:1px 5px;border-radius:4px;font-family:monospace;font-size:0.85em;color:#79c0ff}
+.step-desc b{color:#ffa657}
+.nav-btns{display:flex;gap:8px}
+.nbtn{padding:7px 16px;border-radius:6px;border:1px solid #30363d;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all .15s}
+.nbtn:disabled{opacity:.35;cursor:not-allowed}
+.btn-p{background:#21262d;color:#c9d1d9}.btn-p:hover:not(:disabled){background:#30363d}
+.btn-n{background:#238636;color:#fff;border-color:#2ea043}.btn-n:hover:not(:disabled){background:#2ea043}
+.btn-r{background:#6e40c9;color:#fff;border-color:#8957e5;margin-left:auto}.btn-r:hover{background:#8957e5}
+/* === VIZ ELEMENTS === */
+.stack-wrap{display:flex;flex-direction:column;align-items:center;gap:5px}
+.q-wrap{display:flex;flex-direction:column;align-items:center;gap:10px}
+.q-row{display:flex;align-items:center;gap:3px;flex-wrap:wrap;justify-content:center}
+.two-stacks{display:flex;gap:60px;align-items:flex-start;justify-content:center}
+.named-stack{display:flex;flex-direction:column;align-items:center;gap:5px}
+.ns-label{font-size:0.78rem;font-weight:700;color:#8b949e;padding:3px 10px;background:#21262d;border-radius:4px;margin-bottom:4px}
+.top-ptr{display:flex;flex-direction:column;align-items:center;margin-bottom:2px}
+.top-ptr span{font-size:0.72rem;color:#f78166;font-weight:700;font-family:monospace}
+.top-ptr-arrow{color:#f78166;font-size:0.9rem}
+.ptr-labels{display:flex;gap:3px;font-size:0.7rem;font-weight:700;font-family:monospace;color:#f78166}
+.node-box{display:flex;align-items:stretch;border:2px solid #30363d;border-radius:7px;overflow:hidden;animation:nAppear .35s ease;min-width:100px;transition:border-color .3s,box-shadow .3s}
+.node-box.n-new{border-color:#3fb950;box-shadow:0 0 14px rgba(63,185,80,.45);animation:nNew .4s ease}
+.node-box.n-hi{border-color:#388bfd;box-shadow:0 0 12px rgba(56,139,253,.4)}
+.node-box.n-pop{border-color:#f85149;box-shadow:0 0 12px rgba(248,81,73,.4);animation:nPop .5s ease forwards}
+.node-box.n-curr{border-color:#e3b341;box-shadow:0 0 12px rgba(227,179,65,.4)}
+.nd{padding:9px 15px;font-family:'Consolas',monospace;font-size:1.15rem;font-weight:700;background:#1c2128;min-width:52px;text-align:center;color:#e6edf3}
+.nn{padding:7px 9px;font-family:monospace;font-size:0.68rem;background:#0d1117;border-left:1px solid #30363d;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.nn .nl{color:#3d4450;font-size:0.62rem}
+.nn .nv{color:#388bfd;font-size:0.72rem}
+.node-arr{color:#388bfd;font-size:1rem;padding:0 2px}
+.null-box{padding:6px 12px;background:#1c2128;border:2px dashed #30363d;border-radius:7px;color:#6e7681;font-family:monospace;font-size:0.85rem}
+.vars-row{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+.vchip{background:#21262d;border:1px solid #30363d;border-radius:5px;padding:4px 10px;font-family:monospace;font-size:0.78rem}
+.vchip .vn{color:#d2a8ff}.vchip .veq{color:#6e7681;margin:0 3px}.vchip .vv{color:#ffa657;font-weight:700}
+.out-box{background:#0d1117;border:1px solid #30363d;border-radius:7px;padding:10px 14px;font-family:monospace;min-width:180px;max-width:380px;margin-top:10px}
+.out-lbl{color:#6e7681;font-size:0.72rem;margin-bottom:5px}
+.out-line{color:#3fb950;font-size:0.875rem;line-height:1.6}
+.op-badge{display:inline-block;padding:2px 10px;border-radius:12px;font-family:monospace;font-size:0.75rem;font-weight:700;margin-bottom:8px}
+.ob-push{background:#12261e;color:#3fb950;border:1px solid #238636}
+.ob-pop{background:#2d1313;color:#f85149;border:1px solid #6e1a1a}
+.ob-enq{background:#12261e;color:#3fb950;border:1px solid #238636}
+.ob-deq{background:#2d1313;color:#f85149;border:1px solid #6e1a1a}
+.ob-disp{background:#131d2e;color:#79c0ff;border:1px solid #1565c0}
+.ob-sort{background:#1d1335;color:#d2a8ff;border:1px solid #6e40c9}
+.ob-bin{background:#1e1b10;color:#e3b341;border:1px solid #9e6a03}
+.ob-rev{background:#1e1322;color:#f0883e;border:1px solid #9e4a00}
+.ob-init{background:#161b22;color:#8b949e;border:1px solid #30363d}
+.node-down-arr{color:#388bfd;font-size:0.9rem}
+@keyframes nAppear{0%{opacity:0;transform:scale(.6) translateY(-15px)}50%{opacity:1;transform:scale(1.02) translateY(0)}100%{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes nNew{0%{opacity:0;transform:scale(.35);box-shadow:0 0 20px rgba(63,185,80,.8)}30%{opacity:0.8;transform:scale(1.12)}70%{transform:scale(1.02)}100%{opacity:1;transform:scale(1)}}
+@keyframes nPop{0%{opacity:1;transform:scale(1) rotateY(0deg)}50%{opacity:1;transform:scale(1.08) rotateY(10deg)}100%{opacity:0;transform:scale(0.3) translateX(-30px)}}
+@keyframes nodePulse{0%,100%{box-shadow:0 0 8px rgba(56,139,253,.3)}50%{box-shadow:0 0 18px rgba(56,139,253,.7)}}
+@keyframes ptrArrowFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.node-box.n-hi{animation:nodePulse .6s ease-in-out infinite}
+.ptr-arrow{animation:ptrArrowFloat .8s ease-in-out infinite}
+</style>
+</head>
+<body>
+<header>
+  <div style="flex:1"><h1>Algo2 TP &mdash; Stacks &amp; Queues with Linked Lists in C</h1><p>Click <strong>Next Step ▶</strong> to animate code execution step by step</p></div>
+  <div style="text-align:right;font-size:0.8rem;color:#90caf9"><div><b>M.A Djenane</b></div><div>University of Tiaret</div></div>
+</header>
+<div class="tab-bar">
+  <button class="tab active" onclick="switchEx(0)">Ex.1 &mdash; Stack</button>
+  <button class="tab" onclick="switchEx(1)">Ex.2 &mdash; Queue</button>
+  <button class="tab" onclick="switchEx(2)">Ex.3 &mdash; Sort Stack</button>
+  <button class="tab" onclick="switchEx(3)">Ex.4 &mdash; Binary Numbers</button>
+</div>
+<div class="workspace">
+  <div class="code-pane">
+    <div class="code-titlebar"><div class="tl tl-r"></div><div class="tl tl-y"></div><div class="tl tl-g"></div><span class="code-fname" id="code-fname">stack.c</span></div>
+    <div class="code-scroll" id="code-scroll"></div>
+  </div>
+  <div class="viz-pane"><div class="viz-canvas" id="viz-canvas"></div></div>
+</div>
+<div class="step-bar">
+  <div class="step-top"><div class="dots" id="dots"></div><span class="s-count" id="s-count">Step 1/1</span></div>
+  <div class="step-desc" id="step-desc"></div>
+  <div class="nav-btns">
+    <button class="nbtn btn-p" id="btn-p" onclick="prevStep()">&#9664; Prev</button>
+    <button class="nbtn btn-n" id="btn-n" onclick="nextStep()">Next &#9654;</button>
+    <button class="nbtn btn-r" onclick="resetEx()">&#8635; Reset</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  CODE LINES (HTML with syntax highlighting)
+// ============================================================
+const CODE = [
+// ── EX1 ──────────────────────────────────────────────────────
+[
+`<span class="cm">// ── Node & Stack structures ─────────────────────────</span>`,
+`<span class="kw">typedef</span> <span class="kw">struct</span> Node {`,
+`    <span class="kw">int</span> <span class="field">data</span>;`,
+`    <span class="kw">struct</span> Node* <span class="field">next</span>;`,
+`} Node;`,
+``,
+`<span class="kw">typedef</span> <span class="kw">struct</span> {`,
+`    Node* <span class="field">top</span>;`,
+`} Stack;`,
+``,
+`<span class="cm">// ── 1. Push ─────────────────────────────────────────</span>`,
+`<span class="kw">void</span> <span class="fn">push</span>(Stack* s, <span class="kw">int</span> val) {`,
+`    Node* newNode = <span class="fn">malloc</span>(<span class="kw">sizeof</span>(Node));`,
+`    newNode-><span class="field">data</span> = val;`,
+`    newNode-><span class="field">next</span> = s-><span class="field">top</span>;`,
+`    s-><span class="field">top</span> = newNode;`,
+`}`,
+``,
+`<span class="cm">// ── 2. Pop ──────────────────────────────────────────</span>`,
+`<span class="kw">int</span> <span class="fn">pop</span>(Stack* s) {`,
+`    <span class="kw">if</span> (s-><span class="field">top</span> == <span class="kw">NULL</span>) {`,
+`        <span class="fn">printf</span>(<span class="str">"Stack is empty!\\n"</span>);`,
+`        <span class="kw">return</span> -<span class="num">1</span>;`,
+`    }`,
+`    Node* temp = s-><span class="field">top</span>;`,
+`    <span class="kw">int</span> val = temp-><span class="field">data</span>;`,
+`    s-><span class="field">top</span> = s-><span class="field">top</span>-><span class="field">next</span>;`,
+`    <span class="fn">free</span>(temp);`,
+`    <span class="kw">return</span> val;`,
+`}`,
+``,
+`<span class="cm">// ── 3. Display ──────────────────────────────────────</span>`,
+`<span class="kw">void</span> <span class="fn">display</span>(Stack* s) {`,
+`    Node* curr = s-><span class="field">top</span>;`,
+`    <span class="fn">printf</span>(<span class="str">"TOP -&gt; "</span>);`,
+`    <span class="kw">while</span> (curr != <span class="kw">NULL</span>) {`,
+`        <span class="fn">printf</span>(<span class="str">"[%d] -&gt; "</span>, curr-><span class="field">data</span>);`,
+`        curr = curr-><span class="field">next</span>;`,
+`    }`,
+`    <span class="fn">printf</span>(<span class="str">"NULL\\n"</span>);`,
+`}`,
+],
+// ── EX2 ──────────────────────────────────────────────────────
+[
+`<span class="cm">// ── Queue structure (reuses Node from Ex1) ──────────</span>`,
+`<span class="kw">typedef</span> <span class="kw">struct</span> {`,
+`    Node* <span class="field">front</span>;`,
+`    Node* <span class="field">rear</span>;`,
+`} Queue;`,
+``,
+`<span class="cm">// ── 1. Enqueue ──────────────────────────────────────</span>`,
+`<span class="kw">void</span> <span class="fn">enqueue</span>(Queue* q, <span class="kw">int</span> val) {`,
+`    Node* newNode = <span class="fn">malloc</span>(<span class="kw">sizeof</span>(Node));`,
+`    newNode-><span class="field">data</span> = val;`,
+`    newNode-><span class="field">next</span> = <span class="kw">NULL</span>;`,
+`    <span class="kw">if</span> (q-><span class="field">rear</span> == <span class="kw">NULL</span>) {`,
+`        q-><span class="field">front</span> = q-><span class="field">rear</span> = newNode;`,
+`        <span class="kw">return</span>;`,
+`    }`,
+`    q-><span class="field">rear</span>-><span class="field">next</span> = newNode;`,
+`    q-><span class="field">rear</span> = newNode;`,
+`}`,
+``,
+`<span class="cm">// ── 2. Dequeue ──────────────────────────────────────</span>`,
+`<span class="kw">int</span> <span class="fn">dequeue</span>(Queue* q) {`,
+`    <span class="kw">if</span> (q-><span class="field">front</span> == <span class="kw">NULL</span>) {`,
+`        <span class="fn">printf</span>(<span class="str">"Queue is empty!\\n"</span>);`,
+`        <span class="kw">return</span> -<span class="num">1</span>;`,
+`    }`,
+`    Node* temp = q-><span class="field">front</span>;`,
+`    <span class="kw">int</span> val = temp-><span class="field">data</span>;`,
+`    q-><span class="field">front</span> = q-><span class="field">front</span>-><span class="field">next</span>;`,
+`    <span class="kw">if</span> (q-><span class="field">front</span> == <span class="kw">NULL</span>) q-><span class="field">rear</span> = <span class="kw">NULL</span>;`,
+`    <span class="fn">free</span>(temp);`,
+`    <span class="kw">return</span> val;`,
+`}`,
+``,
+`<span class="cm">// ── 3. Reverse queue using a stack ──────────────────</span>`,
+`<span class="kw">void</span> <span class="fn">reverseQueue</span>(Queue* q) {`,
+`    Stack s;  s.<span class="field">top</span> = <span class="kw">NULL</span>;`,
+`    <span class="kw">while</span> (q-><span class="field">front</span> != <span class="kw">NULL</span>)`,
+`        <span class="fn">push</span>(&amp;s, <span class="fn">dequeue</span>(q));`,
+`    <span class="kw">while</span> (s.<span class="field">top</span> != <span class="kw">NULL</span>)`,
+`        <span class="fn">enqueue</span>(q, <span class="fn">pop</span>(&amp;s));`,
+`}`,
+],
+// ── EX3 ──────────────────────────────────────────────────────
+[
+`<span class="cm">// ── Sort stack using one extra stack ────────────────</span>`,
+`<span class="cm">// After sorting: smallest element on TOP</span>`,
+`<span class="kw">void</span> <span class="fn">sortStack</span>(Stack* input) {`,
+`    Stack temp;`,
+`    temp.<span class="field">top</span> = <span class="kw">NULL</span>;`,
+``,
+`    <span class="kw">while</span> (input-><span class="field">top</span> != <span class="kw">NULL</span>) {`,
+`        <span class="kw">int</span> tmp = <span class="fn">pop</span>(input);`,
+``,
+`        <span class="kw">while</span> (temp.<span class="field">top</span> != <span class="kw">NULL</span> &&`,
+`               temp.<span class="field">top</span>-><span class="field">data</span> > tmp)`,
+`            <span class="fn">push</span>(input, <span class="fn">pop</span>(&amp;temp));`,
+``,
+`        <span class="fn">push</span>(&amp;temp, tmp);`,
+`    }`,
+``,
+`    <span class="cm">// Copy sorted elements back to input</span>`,
+`    <span class="kw">while</span> (temp.<span class="field">top</span> != <span class="kw">NULL</span>)`,
+`        <span class="fn">push</span>(input, <span class="fn">pop</span>(&amp;temp));`,
+`}`,
+],
+// ── EX4 ──────────────────────────────────────────────────────
+[
+`<span class="cm">// Uses same Node &amp; Queue from Ex.2 (int data)</span>`,
+``,
+`<span class="cm">// ── Generate first N binary numbers ─────────────────</span>`,
+`<span class="kw">void</span> <span class="fn">generateBinary</span>(<span class="kw">int</span> n) {`,
+`    Queue q = {<span class="kw">NULL</span>, <span class="kw">NULL</span>};`,
+``,
+`    <span class="fn">enqueue</span>(&amp;q, <span class="num">1</span>);`,
+``,
+`    <span class="kw">for</span> (<span class="kw">int</span> i = <span class="num">0</span>; i &lt; n; i++) {`,
+`        <span class="kw">int</span> curr = <span class="fn">dequeue</span>(&amp;q);`,
+`        <span class="fn">printf</span>(<span class="str">"%d\\n"</span>, curr);`,
+`        <span class="fn">enqueue</span>(&amp;q, curr * <span class="num">10</span>);`,
+`        <span class="fn">enqueue</span>(&amp;q, curr * <span class="num">10</span> + <span class="num">1</span>);`,
+`    }`,
+`}`,
+],
+];
+
+const FNAMES = ['stack.c','queue.c','sort_stack.c','binary.c'];
+
+// ============================================================
+//  STEPS DATA
+//  Each step: { lines:[], text:'', state:{} }
+//  State shapes vary per exercise (see render functions)
+// ============================================================
+
+// EX1 state: { stack, newNode:{val,phase}, hiIdx, popIdx, currIdx, vars, output, op }
+const STEPS = [
+[// EX1
+ {lines:[0,1,2,3,4,5,6,7,8],op:'init',text:`We define a <code>Node</code> struct with two fields: <b>data</b> (stores the integer value) and <b>next</b> (pointer to the next node). A <code>Stack</code> wraps a single pointer <code>top</code> — it points to the topmost node, or <b>NULL</b> when empty.`,state:{stack:[],newNode:null,hiIdx:-1,popIdx:-1,currIdx:-1,vars:{},output:[]}},
+ {lines:[10,11],op:'push',text:`We call <code>push(s, 3)</code>. The function receives a pointer to the stack and the value <b>3</b> to insert.`,state:{stack:[],newNode:null,hiIdx:-1,popIdx:-1,currIdx:-1,vars:{val:3},output:[]}},
+ {lines:[12],op:'push',text:`<code>malloc(sizeof(Node))</code> allocates heap memory for a brand-new node. We store the pointer in <code>newNode</code>. The node's contents are still uninitialized (shown as <b>?</b>).`,state:{stack:[],newNode:{val:'?',phase:'alloc'},hiIdx:-1,popIdx:-1,currIdx:-1,vars:{val:3},output:[]}},
+ {lines:[13],op:'push',text:`<code>newNode->data = val</code> — we write <b>3</b> into the data field of the new node.`,state:{stack:[],newNode:{val:3,phase:'data'},hiIdx:-1,popIdx:-1,currIdx:-1,vars:{val:3},output:[]}},
+ {lines:[14],op:'push',text:`<code>newNode->next = s->top</code> — the stack is currently empty, so <code>s->top</code> is <b>NULL</b>. We set <code>newNode->next = NULL</code>.`,state:{stack:[],newNode:{val:3,phase:'next'},hiIdx:-1,popIdx:-1,currIdx:-1,vars:{val:3},output:[]}},
+ {lines:[15],op:'push',text:`<code>s->top = newNode</code> — the stack's top pointer now points to our new node. <b>Push complete!</b> Stack: <b>3 → NULL</b>`,state:{stack:[3],newNode:null,hiIdx:0,popIdx:-1,currIdx:-1,vars:{},output:[]}},
+ {lines:[11,12,13,14],op:'push',text:`<code>push(s, 1)</code> — allocate a new node, set <code>data = 1</code>, then <code>next = s->top</code> which currently points to node <b>3</b>. The new node is being linked in.`,state:{stack:[3],newNode:{val:1,phase:'next'},hiIdx:-1,popIdx:-1,currIdx:-1,vars:{val:1},output:[]}},
+ {lines:[15],op:'push',text:`<code>s->top = newNode</code> — node <b>1</b> is now on top, pointing to node <b>3</b>. Stack: <b>1 → 3 → NULL</b>`,state:{stack:[1,3],newNode:null,hiIdx:0,popIdx:-1,currIdx:-1,vars:{},output:[]}},
+ {lines:[11,12,13,14,15],op:'push',text:`<code>push(s, 4)</code> — create node with <code>data=4</code>, link its <code>next</code> to node <b>1</b>, update <code>top</code>. Stack: <b>4 → 1 → 3 → NULL</b>`,state:{stack:[4,1,3],newNode:null,hiIdx:0,popIdx:-1,currIdx:-1,vars:{},output:[]}},
+ {lines:[18,19],op:'pop',text:`Now we call <code>pop(s)</code>. It will remove and return the top element.`,state:{stack:[4,1,3],newNode:null,hiIdx:-1,popIdx:-1,currIdx:-1,vars:{},output:[]}},
+ {lines:[20],op:'pop',text:`<code>if (s->top == NULL)</code> — the stack is NOT empty (top → node 4). We skip the error branch and proceed.`,state:{stack:[4,1,3],newNode:null,hiIdx:0,popIdx:-1,currIdx:-1,vars:{},output:[]}},
+ {lines:[24,25],op:'pop',text:`<code>temp = s->top</code> saves the top node. <code>val = temp->data</code> reads its value: <b>val = 4</b>. We'll return this after cleanup.`,state:{stack:[4,1,3],newNode:null,hiIdx:0,popIdx:-1,currIdx:-1,vars:{temp:4,val:4},output:[]}},
+ {lines:[26],op:'pop',text:`<code>s->top = s->top->next</code> — the stack's top pointer now jumps to node <b>1</b>. Node <b>4</b> is detached from the list.`,state:{stack:[4,1,3],newNode:null,hiIdx:-1,popIdx:0,currIdx:-1,vars:{temp:4,val:4},output:[]}},
+ {lines:[27,28],op:'pop',text:`<code>free(temp)</code> releases the memory of node 4. <code>return val</code> returns <b>4</b>. Stack is now: <b>1 → 3 → NULL</b>`,state:{stack:[1,3],newNode:null,hiIdx:-1,popIdx:-1,currIdx:-1,vars:{},output:['pop() returned: 4']}},
+ {lines:[31,32,33,34],op:'disp',text:`<code>display(s)</code> — we set <code>curr = s->top</code> (points to node <b>1</b>) and print "TOP ->".`,state:{stack:[1,3],newNode:null,hiIdx:-1,popIdx:-1,currIdx:0,vars:{curr:1},output:['TOP -> ']}},
+ {lines:[35,36,37],op:'disp',text:`<code>curr != NULL</code> → true. Print <b>[1] -></b>. Then <code>curr = curr->next</code> advances to node <b>3</b>.`,state:{stack:[1,3],newNode:null,hiIdx:-1,popIdx:-1,currIdx:1,vars:{curr:3},output:['TOP -> [1] -> ']}},
+ {lines:[35,36,37],op:'disp',text:`<code>curr != NULL</code> → true again. Print <b>[3] -></b>. Then <code>curr = curr->next</code> advances to <b>NULL</b>.`,state:{stack:[1,3],newNode:null,hiIdx:-1,popIdx:-1,currIdx:2,vars:{curr:'NULL'},output:['TOP -> [1] -> [3] -> ']}},
+ {lines:[38,39],op:'disp',text:`<code>curr == NULL</code> → loop ends. Print <b>NULL</b>. Final output: <b>TOP -> [1] -> [3] -> NULL</b> ✓`,state:{stack:[1,3],newNode:null,hiIdx:-1,popIdx:-1,currIdx:-1,vars:{},output:['TOP -> [1] -> [3] -> NULL']}},
+],
+
+// EX2 state: { queue, newNode:{val,phase}, popIdx, stack, vars, output, op, revPhase }
+[// EX2
+ {lines:[0,1,2,3,4],op:'init',text:`A <code>Queue</code> struct holds two pointers: <b>front</b> (where we remove elements) and <b>rear</b> (where we insert). Both start as <b>NULL</b> (empty queue).`,state:{queue:[],newNode:null,popIdx:-1,stack:[],vars:{},output:[],revPhase:0}},
+ {lines:[6,7],op:'enq',text:`We call <code>enqueue(q, 1)</code>. The queue is empty, so this will be both the front and the rear.`,state:{queue:[],newNode:null,popIdx:-1,stack:[],vars:{val:1},output:[],revPhase:0}},
+ {lines:[8,9,10],op:'enq',text:`Allocate a new node: <code>data=1</code>, <code>next=NULL</code> (it will be the last node).`,state:{queue:[],newNode:{val:1,phase:'alloc'},popIdx:-1,stack:[],vars:{val:1},output:[],revPhase:0}},
+ {lines:[11,12,13],op:'enq',text:`<code>q->rear == NULL</code> → queue was empty. Set <code>front = rear = newNode</code>. Node <b>1</b> is now both front and rear.`,state:{queue:[1],newNode:null,popIdx:-1,stack:[],vars:{},output:[],revPhase:0}},
+ {lines:[7,8,9,10],op:'enq',text:`<code>enqueue(q, 2)</code> — allocate node with <code>data=2</code>, <code>next=NULL</code>.`,state:{queue:[1],newNode:{val:2,phase:'alloc'},popIdx:-1,stack:[],vars:{val:2},output:[],revPhase:0}},
+ {lines:[15,16],op:'enq',text:`Queue not empty → <code>rear->next = newNode</code> (node 1 now points to node 2). Then <code>rear = newNode</code>. Queue: <b>1 → 2 → NULL</b>`,state:{queue:[1,2],newNode:null,popIdx:-1,stack:[],vars:{},output:[],revPhase:0}},
+ {lines:[7,8,9,10,15,16],op:'enq',text:`<code>enqueue(q, 3)</code> — same process. Node 3 appended at rear. Queue: <b>1 → 2 → 3 → NULL</b>`,state:{queue:[1,2,3],newNode:null,popIdx:-1,stack:[],vars:{},output:[],revPhase:0}},
+ {lines:[19,20],op:'deq',text:`<code>dequeue(q)</code> — check <code>front != NULL</code> (true). Proceed to remove the front element.`,state:{queue:[1,2,3],newNode:null,popIdx:0,stack:[],vars:{},output:[],revPhase:0}},
+ {lines:[23,24,25],op:'deq',text:`<code>temp = q->front</code> (node 1). <code>val = 1</code>. Then <code>front = front->next</code> — front now points to node <b>2</b>.`,state:{queue:[1,2,3],newNode:null,popIdx:0,stack:[],vars:{temp:1,val:1},output:[],revPhase:0}},
+ {lines:[26,27,28],op:'deq',text:`<code>free(temp)</code> — node 1 is freed. <code>return 1</code>. Queue is now: <b>2 → 3 → NULL</b>`,state:{queue:[2,3],newNode:null,popIdx:-1,stack:[],vars:{},output:['dequeue() returned: 1'],revPhase:0}},
+ {lines:[33,34,35],op:'rev',text:`<code>reverseQueue(q)</code> called. Create local <code>Stack s</code> with <code>top=NULL</code>. <b>Phase 1 begins</b>: drain the queue into the stack — FIFO order becomes LIFO, which reverses the sequence. Queue: <b>[2→3]</b>, Stack: <b>empty</b>.`,state:{queue:[2,3],newNode:null,popIdx:-1,stack:[],vars:{},output:[],revPhase:1}},
+ {lines:[36,37],op:'rev',text:`<code>dequeue(q)</code> → removes <b>2</b> from the front. <code>push(&s, 2)</code> → node 2 goes onto the stack (top). Queue: <b>[3]</b>, Stack: <b>[2]</b>.`,state:{queue:[3],newNode:null,popIdx:-1,stack:[2],vars:{},output:[],revPhase:1}},
+ {lines:[36,37],op:'rev',text:`<code>dequeue(q)</code> → removes <b>3</b> from front. <code>push(&s, 3)</code> → node 3 is now on top of the stack. Queue: <b>empty</b>, Stack: <b>[3→2]</b> (3 on top).`,state:{queue:[],newNode:null,popIdx:-1,stack:[3,2],vars:{},output:[],revPhase:1}},
+ {lines:[38,39],op:'rev',text:`Queue is now empty — Phase 1 complete! <b>Phase 2 begins</b>: pop from the stack and enqueue back. Because LIFO pops in reverse insertion order, the queue will be refilled in reversed sequence.`,state:{queue:[],newNode:null,popIdx:-1,stack:[3,2],vars:{},output:[],revPhase:2}},
+ {lines:[38,39],op:'rev',text:`<code>pop(&s)</code> → returns <b>3</b> (top of stack). <code>enqueue(q, 3)</code> → 3 goes to the back of the queue. Queue: <b>[3]</b>, Stack: <b>[2]</b>.`,state:{queue:[3],newNode:null,popIdx:-1,stack:[2],vars:{},output:[],revPhase:2}},
+ {lines:[38,39,40],op:'rev',text:`<code>pop(&s)</code> → returns <b>2</b>. <code>enqueue(q, 2)</code> → 2 to the back. Stack is now empty — loop ends. Queue: <b>[3→2→NULL]</b>. <b>Reversed! ✓</b>`,state:{queue:[3,2],newNode:null,popIdx:-1,stack:[],vars:{},output:['Queue reversed: 3 → 2 → NULL'],revPhase:2}},
+],
+
+// EX3 state: { input, temp, hiInput, hiTemp, vars, phase }
+[// EX3
+ {lines:[0,1,2],op:'init',text:`<code>sortStack</code> sorts a stack so the <b>smallest element is on top</b>. We use one extra stack <code>temp</code> as a sorted buffer. Input: <b>3, 1, 4, 2, 5</b> (top to bottom). Only push/pop/peek/isEmpty allowed.`,state:{input:[3,1,4,2,5],temp:[],hiI:-1,hiT:-1,vars:{},movingVal:null}},
+ {lines:[3,4,5],op:'sort',text:`Initialize <code>Stack temp</code> with <code>top=NULL</code>. Check <code>input->top != NULL</code> → true. Begin the outer loop.`,state:{input:[3,1,4,2,5],temp:[],hiI:-1,hiT:-1,vars:{},movingVal:null}},
+ {lines:[7],op:'sort',text:`<code>int tmp = pop(input)</code> → removes <b>3</b> from input. Now <code>input = [1,4,2,5]</code>, <code>tmp = 3</code>.`,state:{input:[1,4,2,5],temp:[],hiI:-1,hiT:-1,vars:{tmp:3},movingVal:null}},
+ {lines:[9,10,11],op:'sort',text:`Inner loop: <code>temp.top == NULL</code> → false, skip. Push <code>tmp=3</code> to temp. <code>temp = [3]</code>.`,state:{input:[1,4,2,5],temp:[3],hiI:-1,hiT:0,vars:{tmp:3},movingVal:null}},
+ {lines:[7],op:'sort',text:`Outer loop: <code>tmp = pop(input)</code> → removes <b>1</b>. <code>input = [4,2,5]</code>, <code>tmp = 1</code>.`,state:{input:[4,2,5],temp:[3],hiI:-1,hiT:-1,vars:{tmp:1},movingVal:null}},
+ {lines:[9,10,11],op:'sort',text:`Inner loop: <code>temp.top->data = 3 > 1</code> → true! Pop <b>3</b> from temp, push back to input. Now <code>temp = []</code>, <code>input = [3,4,2,5]</code>.`,state:{input:[3,4,2,5],temp:[],hiI:0,hiT:-1,vars:{tmp:1},movingVal:3}},
+ {lines:[13],op:'sort',text:`Inner loop ends (temp empty). Push <code>tmp=1</code> to temp. <code>temp = [1]</code>. Temp keeps elements in descending order (largest on top).`,state:{input:[3,4,2,5],temp:[1],hiI:-1,hiT:0,vars:{tmp:1},movingVal:null}},
+ {lines:[7,9,10,13],op:'sort',text:`Pop <b>3</b> from input (<code>tmp=3</code>). <code>temp.top=1, 1 &gt; 3?</code> No → push 3 to temp directly. <code>temp = [3,1]</code>, <code>input = [4,2,5]</code>.`,state:{input:[4,2,5],temp:[3,1],hiI:-1,hiT:0,vars:{tmp:3},movingVal:null}},
+ {lines:[7,9,10,13],op:'sort',text:`Pop <b>4</b> from input (<code>tmp=4</code>). <code>temp.top=3, 3 &gt; 4?</code> No → push 4 to temp. <code>temp = [4,3,1]</code>, <code>input = [2,5]</code>.`,state:{input:[2,5],temp:[4,3,1],hiI:-1,hiT:0,vars:{tmp:4},movingVal:null}},
+ {lines:[7],op:'sort',text:`Pop <b>2</b> from input (<code>tmp=2</code>). <code>input = [5]</code>.`,state:{input:[5],temp:[4,3,1],hiI:-1,hiT:-1,vars:{tmp:2},movingVal:null}},
+ {lines:[9,10,11],op:'sort',text:`Inner loop: <code>4 &gt; 2</code> → pop 4, push to input. <code>3 &gt; 2</code> → pop 3, push to input. <code>1 &gt; 2</code>? No → stop. Input gets 3 and 4 back: <code>input=[3,4,5]</code>, <code>temp=[1]</code>.`,state:{input:[3,4,5],temp:[1],hiI:-1,hiT:-1,vars:{tmp:2},movingVal:null}},
+ {lines:[13],op:'sort',text:`Push <code>tmp=2</code> to temp. <code>temp = [2,1]</code>. Note: temp is always sorted descending (largest on top), so when we copy back, smallest lands on top of input.`,state:{input:[3,4,5],temp:[2,1],hiI:-1,hiT:0,vars:{tmp:2},movingVal:null}},
+ {lines:[7,9,10,13],op:'sort',text:`Pop <b>3</b> (<code>tmp=3</code>). <code>temp.top=2, 2&gt;3?</code> No → push 3. <code>temp=[3,2,1]</code>, <code>input=[4,5]</code>.`,state:{input:[4,5],temp:[3,2,1],hiI:-1,hiT:0,vars:{tmp:3},movingVal:null}},
+ {lines:[7,9,10,13],op:'sort',text:`Pop <b>4</b> (<code>tmp=4</code>). <code>3&gt;4?</code> No → push 4. <code>temp=[4,3,2,1]</code>, <code>input=[5]</code>.`,state:{input:[5],temp:[4,3,2,1],hiI:-1,hiT:0,vars:{tmp:4},movingVal:null}},
+ {lines:[7,9,10,13],op:'sort',text:`Pop <b>5</b> (<code>tmp=5</code>). <code>4&gt;5?</code> No → push 5. <code>temp=[5,4,3,2,1]</code>, <code>input=[]</code>. Outer loop ends.`,state:{input:[],temp:[5,4,3,2,1],hiI:-1,hiT:0,vars:{tmp:5},movingVal:null}},
+ {lines:[17,18],op:'sort',text:`Copy-back loop: while temp not empty, <code>pop(&temp)</code> → <code>push(input, ...)</code>. We pop 5,4,3,2,1 in order and push them onto input. Input gets 1 on top. <b>Done!</b> Input: <b>1→2→3→4→5→NULL</b> ✓`,state:{input:[1,2,3,4,5],temp:[],hiI:0,hiT:-1,vars:{},movingVal:null}},
+],
+
+// EX4 state: { queue, output, curr, i }
+// int trick: store binary representations as ints (1,10,11,100...)
+// children of curr: curr*10 (append 0) and curr*10+1 (append 1)
+[// EX4
+ {lines:[2,3,4],op:'bin',text:`<code>generateBinary(5)</code> — uses the same <code>Queue</code> struct with <b>int data</b>. The trick: we store binary representations as integers (1 = 1, 10 = binary "10", 11 = binary "11"...). No strings needed — pure <code>%d</code>.`,state:{queue:[],output:[],curr:null,i:0}},
+ {lines:[6],op:'bin',text:`<code>enqueue(&q, 1)</code> — seed the queue with integer <b>1</b>. Each integer <b>n</b> generates two children: <b>n×10</b> (appends digit "0") and <b>n×10+1</b> (appends digit "1"), simulating binary string growth with plain integer arithmetic.`,state:{queue:[1],output:[],curr:null,i:0}},
+ {lines:[8,9],op:'bin',text:`Loop <b>i=0</b>: <code>int curr = dequeue(&q)</code> — removes integer <b>1</b> from the front of the queue. <code>curr = 1</code>.`,state:{queue:[],output:[],curr:1,i:0}},
+ {lines:[10],op:'bin',text:`<code>printf("%d\\n", curr)</code> → prints <b>1</b> as an integer. This is the 1st binary number. (%d, not %s!)`,state:{queue:[],output:[1],curr:1,i:0}},
+ {lines:[11,12],op:'bin',text:`<code>enqueue(&q, 1×10 = 10)</code> and <code>enqueue(&q, 1×10+1 = 11)</code>. Appending binary digit "0" yields 10; appending "1" yields 11. Queue: <b>[10, 11]</b>.`,state:{queue:[10,11],output:[1],curr:1,i:0}},
+ {lines:[8,9],op:'bin',text:`Loop <b>i=1</b>: <code>curr = dequeue(&q)</code> — removes <b>10</b> from front. <code>curr = 10</code>.`,state:{queue:[11],output:[1],curr:10,i:1}},
+ {lines:[10],op:'bin',text:`<code>printf("%d\\n", 10)</code> → prints <b>10</b>. Second binary number.`,state:{queue:[11],output:[1,10],curr:10,i:1}},
+ {lines:[11,12],op:'bin',text:`<code>enqueue(&q, 100)</code> and <code>enqueue(&q, 101)</code>. Queue: <b>[11, 100, 101]</b>.`,state:{queue:[11,100,101],output:[1,10],curr:10,i:1}},
+ {lines:[8,9],op:'bin',text:`Loop <b>i=2</b>: <code>curr = dequeue(&q)</code> → removes <b>11</b>. <code>curr = 11</code>.`,state:{queue:[100,101],output:[1,10],curr:11,i:2}},
+ {lines:[10],op:'bin',text:`<code>printf("%d\\n", 11)</code> → prints <b>11</b>. Third binary number.`,state:{queue:[100,101],output:[1,10,11],curr:11,i:2}},
+ {lines:[11,12],op:'bin',text:`<code>enqueue(&q, 110)</code> and <code>enqueue(&q, 111)</code>. Queue: <b>[100, 101, 110, 111]</b>.`,state:{queue:[100,101,110,111],output:[1,10,11],curr:11,i:2}},
+ {lines:[8,9,10,11,12],op:'bin',text:`Loop <b>i=3</b>: dequeue <b>100</b> → <code>printf("%d", 100)</code> → enqueue <b>1000</b> and <b>1001</b>. Queue: <b>[101, 110, 111, 1000, 1001]</b>.`,state:{queue:[101,110,111,1000,1001],output:[1,10,11,100],curr:100,i:3}},
+ {lines:[8,9,10],op:'bin',text:`Loop <b>i=4</b>: dequeue <b>101</b> → <code>printf("%d\\n", 101)</code> → prints <b>101</b>. Loop ends (i reaches n=5). <b>Done! ✓</b> All five binary numbers printed as integers with <code>%d</code>.`,state:{queue:[110,111,1000,1001],output:[1,10,11,100,101],curr:101,i:4}},
+],
+];
+
+// ============================================================
+//  RENDER HELPERS
+// ============================================================
+function mkNode(val, nextTxt, cls='') {
+  return `<div class="node-box ${cls}"><div class="nd">${val}</div><div class="nn"><div class="nl">next</div><div class="nv">${nextTxt}</div></div></div>`;
+}
+
+function renderStack1(st) {
+  const {stack,newNode,hiIdx,popIdx,currIdx,vars,output} = st;
+  let h = `<div class="stack-wrap">`;
+  const opMap = {push:'ob-push',pop:'ob-pop',disp:'ob-disp',init:'ob-init'};
+  h += `<div class="top-ptr"><span>TOP</span><div class="top-ptr-arrow">▼</div></div>`;
+  if (newNode) {
+    const nxt = newNode.phase==='next' ? (stack.length>0?`→${stack[0]}`:'→NULL') : (newNode.phase==='alloc'?'?':'?');
+    h += mkNode(newNode.val, nxt, 'n-new');
+    h += `<div style="color:#3fb950;font-size:0.75rem;text-align:center;">↑ new node (pending push)</div>`;
+    h += `<div class="node-down-arr">↓</div>`;
+  }
+  if (stack.length===0 && !newNode) {
+    h += `<div class="null-box">NULL (empty)</div>`;
+  } else {
+    for (let i=0;i<stack.length;i++) {
+      const nxt = i<stack.length-1 ? `→${stack[i+1]}` : '→NULL';
+      let cls = '';
+      if (i===hiIdx) cls='n-hi';
+      if (i===popIdx) cls='n-pop';
+      if (i===currIdx) cls='n-curr';
+      h += mkNode(stack[i], nxt, cls);
+      if (i<stack.length-1) h += `<div class="node-down-arr">↓</div>`;
+    }
+    h += `<div class="node-down-arr">↓</div>`;
+    h += `<div class="null-box">NULL</div>`;
+  }
+  if (Object.keys(vars).length>0) {
+    h += `<div class="vars-row">`;
+    for(const[k,v] of Object.entries(vars)) h+=`<div class="vchip"><span class="vn">${k}</span><span class="veq">=</span><span class="vv">${v}</span></div>`;
+    h += `</div>`;
+  }
+  if (output&&output.length>0) {
+    h += `<div class="out-box"><div class="out-lbl">Output / Return:</div>`;
+    output.forEach(l=>h+=`<div class="out-line">${l}</div>`);
+    h += `</div>`;
+  }
+  h += `</div>`;
+  return h;
+}
+
+function renderQueue2(st) {
+  const {queue,newNode,popIdx,stack,vars,output,revPhase} = st;
+  let h = `<div class="q-wrap">`;
+  h += `<div style="font-size:0.75rem;color:#8b949e;font-weight:700;margin-bottom:10px;">QUEUE (FIFO)</div>`;
+
+  // Queue row — FRONT label above node[0], REAR label above node[last]
+  h += `<div style="display:flex;align-items:flex-end;gap:3px;flex-wrap:wrap;justify-content:center">`;
+  if (queue.length===0 && !newNode) {
+    h += `<div style="display:inline-flex;flex-direction:column;align-items:center"><div style="height:22px"></div><div class="null-box">NULL (empty)</div></div>`;
+  } else {
+    for (let i=0;i<queue.length;i++) {
+      const isFirst = i===0;
+      const isRear  = i===queue.length-1;
+      const nxt = i<queue.length-1 ? `→${queue[i+1]}` : (newNode?`→${newNode.val}`:'→NULL');
+      let cls = i===popIdx ? 'n-pop' : '';
+      let lbl = '';
+      if (isFirst && isRear && !newNode)
+        lbl = `<span style="font-size:0.62rem;font-family:monospace;color:#f78166;font-weight:700">FRONT↓</span>&nbsp;<span style="font-size:0.62rem;font-family:monospace;color:#3fb950;font-weight:700">REAR↓</span>`;
+      else if (isFirst)
+        lbl = `<span style="font-size:0.62rem;font-family:monospace;color:#f78166;font-weight:700">FRONT↓</span>`;
+      else if (isRear)
+        lbl = `<span style="font-size:0.62rem;font-family:monospace;color:#3fb950;font-weight:700">REAR↓</span>`;
+      h += `<div style="display:inline-flex;flex-direction:column;align-items:center">`;
+      h += `<div style="height:22px;display:flex;align-items:center;justify-content:center;gap:4px">${lbl}</div>`;
+      h += mkNode(queue[i],nxt,cls);
+      h += `</div>`;
+      if (i<queue.length-1) h+=`<div class="node-arr" style="align-self:flex-end;padding-bottom:13px">→</div>`;
+    }
+    // New node appears at REAR side (right end)
+    if (newNode) {
+      h += `<div class="node-arr" style="align-self:flex-end;padding-bottom:13px">→</div>`;
+      h += `<div style="display:inline-flex;flex-direction:column;align-items:center">`;
+      h += `<div style="height:22px;display:flex;align-items:center;justify-content:center"><span style="font-size:0.62rem;font-family:monospace;color:#3fb950;font-weight:700">REAR*↓</span></div>`;
+      h += mkNode(newNode.val,'→NULL','n-new');
+      h += `</div>`;
+    }
+    h += `<div class="node-arr" style="align-self:flex-end;padding-bottom:13px">→</div>`;
+    h += `<div class="null-box" style="align-self:flex-end;padding-bottom:5px">NULL</div>`;
+  }
+  h += `</div>`;
+
+  // Reverse phase banner + temp stack
+  if (revPhase>0) {
+    const banner = revPhase===1 ? '▶ Phase 1: Draining Queue → Stack' : '▶ Phase 2: Refilling Stack → Queue';
+    h += `<div style="margin-top:10px;text-align:center"><span style="font-size:0.72rem;color:#f0883e;font-weight:700;background:#1e1322;border:1px solid #9e4a00;border-radius:5px;padding:4px 12px">${banner}</span></div>`;
+    h += `<div style="margin-top:12px;border-top:1px solid #30363d;padding-top:10px">`;
+    h += `<div style="font-size:0.75rem;color:#8b949e;font-weight:700;text-align:center;margin-bottom:6px">TEMP STACK</div>`;
+    h += `<div class="stack-wrap" style="margin-top:0">`;
+    h += `<div class="top-ptr"><span>TOP</span><div class="top-ptr-arrow">▼</div></div>`;
+    if (stack.length===0) {
+      h += `<div class="null-box">NULL (empty)</div>`;
+    } else {
+      for (let i=0;i<stack.length;i++) {
+        const nxt=i<stack.length-1?`→${stack[i+1]}`:'→NULL';
+        h += mkNode(stack[i],nxt,i===0?'n-hi':'');
+        if (i<stack.length-1) h+=`<div class="node-down-arr">↓</div>`;
+      }
+      h+=`<div class="node-down-arr">↓</div><div class="null-box">NULL</div>`;
+    }
+    h+=`</div></div>`;
+  }
+
+  if (Object.keys(vars).length>0) {
+    h+=`<div class="vars-row">`;
+    for(const[k,v] of Object.entries(vars)) h+=`<div class="vchip"><span class="vn">${k}</span><span class="veq">=</span><span class="vv">${v}</span></div>`;
+    h+=`</div>`;
+  }
+  if (output&&output.length>0) {
+    h+=`<div class="out-box"><div class="out-lbl">Output / Return:</div>`;
+    output.forEach(l=>h+=`<div class="out-line">${l}</div>`);
+    h+=`</div>`;
+  }
+  h+=`</div>`;
+  return h;
+}
+
+function renderSort3(st) {
+  const {input,temp,hiI,hiT,vars,movingVal} = st;
+  let h = `<div class="two-stacks">`;
+  // Input stack
+  h += `<div class="named-stack">`;
+  h += `<div class="ns-label">INPUT Stack</div>`;
+  h += `<div class="top-ptr"><span>TOP</span><div class="top-ptr-arrow">▼</div></div>`;
+  if(input.length===0){h+=`<div class="null-box">NULL (empty)</div>`;}
+  else{
+    for(let i=0;i<input.length;i++){
+      const nxt=i<input.length-1?`→${input[i+1]}`:'→NULL';
+      let cls=i===hiI?'n-hi':'';
+      h+=mkNode(input[i],nxt,cls);
+      if(i<input.length-1)h+=`<div class="node-down-arr">↓</div>`;
+    }
+    h+=`<div class="node-down-arr">↓</div><div class="null-box">NULL</div>`;
+  }
+  h+=`</div>`;
+  // Moving val indicator
+  h+=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">`;
+  if(movingVal!==null){
+    h+=`<div style="font-size:0.75rem;color:#e3b341">moving...</div>`;
+    h+=`<div class="node-box n-hi" style="animation:none"><div class="nd">${movingVal}</div><div class="nn"><div class="nl">tmp</div><div class="nv">buf</div></div></div>`;
+  }
+  if(Object.keys(vars).length>0){h+=`<div class="vars-row" style="flex-direction:column">`;for(const[k,v] of Object.entries(vars))h+=`<div class="vchip"><span class="vn">${k}</span><span class="veq">=</span><span class="vv">${v}</span></div>`;h+=`</div>`;}
+  h+=`</div>`;
+  // Temp stack
+  h += `<div class="named-stack">`;
+  h += `<div class="ns-label">TEMP Stack</div>`;
+  h += `<div class="top-ptr"><span>TOP</span><div class="top-ptr-arrow">▼</div></div>`;
+  if(temp.length===0){h+=`<div class="null-box">NULL (empty)</div>`;}
+  else{
+    for(let i=0;i<temp.length;i++){
+      const nxt=i<temp.length-1?`→${temp[i+1]}`:'→NULL';
+      let cls=i===hiT?'n-hi':'';
+      h+=mkNode(temp[i],nxt,cls);
+      if(i<temp.length-1)h+=`<div class="node-down-arr">↓</div>`;
+    }
+    h+=`<div class="node-down-arr">↓</div><div class="null-box">NULL</div>`;
+  }
+  h+=`</div>`;
+  h+=`</div>`;
+  return h;
+}
+
+function renderBinary4(st) {
+  const {queue,output,curr,i} = st;
+  let h=`<div class="q-wrap" style="gap:14px">`;
+  h+=`<div style="font-size:0.75rem;color:#8b949e;font-weight:700">INT QUEUE — Binary Numbers via Digit Arithmetic (curr×10 | curr×10+1)</div>`;
+
+  // Queue with FRONT/REAR labels above correct nodes
+  h+=`<div style="display:flex;align-items:flex-end;gap:3px;flex-wrap:wrap;justify-content:center">`;
+  if (queue.length===0) {
+    h+=`<div style="display:inline-flex;flex-direction:column;align-items:center"><div style="height:22px"></div><div class="null-box">NULL (empty)</div></div>`;
+  } else {
+    for (let j=0;j<queue.length;j++) {
+      const nxt=j<queue.length-1?`→${queue[j+1]}`:'→NULL';
+      const cls=j===0?'n-hi':'';
+      let lbl='';
+      if (j===0 && j===queue.length-1)
+        lbl=`<span style="font-size:0.62rem;font-family:monospace;color:#f78166;font-weight:700">FRONT↓</span>&nbsp;<span style="font-size:0.62rem;font-family:monospace;color:#3fb950;font-weight:700">REAR↓</span>`;
+      else if (j===0)
+        lbl=`<span style="font-size:0.62rem;font-family:monospace;color:#f78166;font-weight:700">FRONT↓</span>`;
+      else if (j===queue.length-1)
+        lbl=`<span style="font-size:0.62rem;font-family:monospace;color:#3fb950;font-weight:700">REAR↓</span>`;
+      h+=`<div style="display:inline-flex;flex-direction:column;align-items:center">`;
+      h+=`<div style="height:22px;display:flex;align-items:center;justify-content:center;gap:4px">${lbl}</div>`;
+      h+=mkNode(queue[j],nxt,cls);
+      h+=`</div>`;
+      if (j<queue.length-1) h+=`<div class="node-arr" style="align-self:flex-end;padding-bottom:13px">→</div>`;
+    }
+    h+=`<div class="node-arr" style="align-self:flex-end;padding-bottom:13px">→</div>`;
+    h+=`<div class="null-box" style="align-self:flex-end;padding-bottom:5px">NULL</div>`;
+  }
+  h+=`</div>`;
+
+  // Current value + child-expansion formula panel
+  if (curr!==null) {
+    h+=`<div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;justify-content:center;background:#131d2e;border:1px solid #1565c0;border-radius:8px;padding:10px 18px">`;
+    h+=`<div style="display:flex;flex-direction:column;align-items:center;gap:4px">`;
+    h+=`<div style="font-size:0.68rem;color:#e3b341;font-weight:700">curr (dequeued)</div>`;
+    h+=`<div class="node-box n-curr" style="animation:none;min-width:70px"><div class="nd" style="font-size:1.4rem;color:#e3b341">${curr}</div><div class="nn"><div class="nl">curr</div></div></div>`;
+    h+=`</div>`;
+    if (output.length<5) {
+      h+=`<div style="font-size:1.2rem;color:#6e7681">→</div>`;
+      h+=`<div style="display:flex;flex-direction:column;gap:8px">`;
+      h+=`<div style="display:flex;align-items:center;gap:10px">`;
+      h+=`<div class="node-box" style="border-color:#238636;min-width:64px"><div class="nd" style="color:#3fb950;font-size:1.1rem">${curr*10}</div><div class="nn"><div class="nl">next</div><div class="nv">→NULL</div></div></div>`;
+      h+=`<span style="font-size:0.75rem;font-family:monospace;color:#6e7681">${curr} × 10 &nbsp;<span style="color:#5a6370">(append 0)</span></span>`;
+      h+=`</div>`;
+      h+=`<div style="display:flex;align-items:center;gap:10px">`;
+      h+=`<div class="node-box" style="border-color:#238636;min-width:64px"><div class="nd" style="color:#3fb950;font-size:1.1rem">${curr*10+1}</div><div class="nn"><div class="nl">next</div><div class="nv">→NULL</div></div></div>`;
+      h+=`<span style="font-size:0.75rem;font-family:monospace;color:#6e7681">${curr} × 10 + 1 <span style="color:#5a6370">(append 1)</span></span>`;
+      h+=`</div>`;
+      h+=`</div>`;
+    }
+    h+=`</div>`;
+  }
+
+  // vars row
+  h+=`<div class="vars-row"><div class="vchip"><span class="vn">i</span><span class="veq">=</span><span class="vv">${i}</span></div><div class="vchip"><span class="vn">n</span><span class="veq">=</span><span class="vv">5</span></div></div>`;
+
+  // Output — show each number as a styled int badge
+  if (output&&output.length>0) {
+    h+=`<div class="out-box" style="text-align:center">`;
+    h+=`<div class="out-lbl">printf output — <code>%d</code> integers:</div>`;
+    h+=`<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:6px">`;
+    output.forEach(v=>h+=`<div style="background:#12261e;border:1px solid #238636;border-radius:5px;padding:4px 14px;font-family:monospace;font-size:1rem;color:#3fb950;font-weight:700">${v}</div>`);
+    h+=`</div>`;
+    if (output.length===5) h+=`<div style="color:#3fb950;font-size:0.8rem;margin-top:8px;">✓ First 5 binary numbers generated!</div>`;
+    h+=`</div>`;
+  }
+
+  h+=`</div>`;
+  return h;
+}
+
+const RENDERERS = [renderStack1,renderQueue2,renderSort3,renderBinary4];
+const OP_BADGE = {push:'ob-push push',pop:'ob-pop pop',enq:'ob-enq enqueue',deq:'ob-deq dequeue',disp:'ob-disp display',sort:'ob-sort sort',bin:'ob-bin binary',rev:'ob-rev reverse',init:'ob-init init'};
+
+// ============================================================
+//  STATE
+// ============================================================
+let curEx = 0, curStep = 0;
+
+function render() {
+  const steps = STEPS[curEx];
+  const step = steps[curStep];
+  // Code
+  const code = CODE[curEx];
+  const hlSet = new Set(step.lines||[]);
+  let codeHtml = '';
+  code.forEach((line,i)=>{
+    const hl = hlSet.has(i)?'hl':'';
+    codeHtml+=`<div class="cl ${hl}"><span class="ln">${i+1}</span><span class="lc">${line}</span></div>`;
+  });
+  document.getElementById('code-scroll').innerHTML = codeHtml;
+  document.getElementById('code-fname').textContent = FNAMES[curEx];
+  // Scroll highlighted line into view
+  const hlEl = document.querySelector('.cl.hl');
+  if(hlEl) hlEl.scrollIntoView({block:'nearest',behavior:'smooth'});
+  // Viz
+  document.getElementById('viz-canvas').innerHTML = RENDERERS[curEx](step.state);
+  // Step desc
+  const op = step.op||'';
+  const badgeCls = OP_BADGE[op]||'ob-init';
+  const [bc,bl] = badgeCls.split(' ');
+  document.getElementById('step-desc').innerHTML = `<span class="op-badge ${bc}">${bl||op}</span> &nbsp;${step.text}`;
+  // Dots
+  let dots='';
+  for(let i=0;i<steps.length;i++){
+    const cls = i<curStep?'done':(i===curStep?'cur':'');
+    dots+=`<div class="dot ${cls}" onclick="goStep(${i})" title="Step ${i+1}"></div>`;
+  }
+  document.getElementById('dots').innerHTML=dots;
+  document.getElementById('s-count').textContent=`Step ${curStep+1}/${steps.length}`;
+  document.getElementById('btn-p').disabled = curStep===0;
+  document.getElementById('btn-n').disabled = curStep===steps.length-1;
+}
+
+function nextStep(){if(curStep<STEPS[curEx].length-1){curStep++;render();}}
+function prevStep(){if(curStep>0){curStep--;render();}}
+function resetEx(){curStep=0;render();}
+function goStep(i){curStep=i;render();}
+function switchEx(i){
+  curEx=i;curStep=0;
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  render();
+}
+
+// keyboard nav
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown') nextStep();
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp') prevStep();
+});
+
+render();
+</script>
+</body>
+</html>
